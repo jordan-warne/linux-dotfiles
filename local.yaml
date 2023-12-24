@@ -1,0 +1,140 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Add line to force qt5ct theme for qt applications system wide
+      ansible.builtin.lineinfile:
+        path: /etc/environment
+        line: QT_QPA_PLATFORMTHEME=qt5ct
+        create: yes
+
+    - name: Create .local folder
+      ansible.builtin.file:
+        path: /home/{{ lookup('env', 'SUDO_USER') }}/.local
+        state: directory
+        owner: "{{ lookup('env', 'SUDO_USER') }}"
+        group: "{{ lookup('env', 'SUDO_USER') }}"
+
+    - name: Create .local/share folder
+      ansible.builtin.file:
+        path: /home/{{ lookup('env', 'SUDO_USER') }}/.local/share
+        state: directory
+        owner: "{{ lookup('env', 'SUDO_USER') }}"
+        group: "{{ lookup('env', 'SUDO_USER') }}"
+
+    - name: Create .local/bin folder
+      ansible.builtin.file:
+        path: /home/{{ lookup('env', 'SUDO_USER') }}/.local/share/bin
+        state: directory
+        owner: "{{ lookup('env', 'SUDO_USER') }}"
+        group: "{{ lookup('env', 'SUDO_USER') }}"
+
+    - name: Create .local/share/themes folder
+      ansible.builtin.file:
+        path: /home/{{ lookup('env', 'SUDO_USER') }}/.local//share/themes
+        state: directory
+
+    - name: Create .local/share/themes folder
+      ansible.builtin.file:
+        path: /home/{{ lookup('env', 'SUDO_USER') }}/.local/share/icons
+        state: directory
+        owner: "{{ lookup('env', 'SUDO_USER') }}"
+        group: "{{ lookup('env', 'SUDO_USER') }}"
+
+    - name: Create .local/share/fonts folder
+      ansible.builtin.file:
+        path: /home/{{ lookup('env', 'SUDO_USER') }}/.local/share/fonts
+        state: directory
+        owner: "{{ lookup('env', 'SUDO_USER') }}"
+        group: "{{ lookup('env', 'SUDO_USER') }}"
+    
+    - name: Download catppuccin mocha theme and unzip
+      ansible.builtin.unarchive:
+        src: https://github.com/catppuccin/gtk/releases/download/v0.4.0/Catppuccin-Mocha-Standard-Lavender-Dark.zip
+        dest: /home/{{ lookup('env', 'SUDO_USER') }}/.local/share/themes
+        remote_src: yes
+
+    - name: Download Victor Mono font and unzip
+      ansible.builtin.unarchive:
+        src: https://rubjo.github.io/victor-mono/VictorMonoAll.zip
+        dest: /home/{{ lookup('env', 'SUDO_USER') }}/.local/share/fonts
+        remote_src: yes
+ 
+    - name: Clone catppuccin-folders
+      git:
+        repo: https://github.com/catppuccin/papirus-folders.git
+        dest: /tmp/papirus-folders
+        clone: yes
+        update: yes
+
+    - name: Copy catppuccin folders patch
+      synchronize:
+        src: /tmp/papirus-folders/src/
+        dest: /usr/share/icons/Papirus/
+  
+    - name: Modify papirus-dark to catppuccin colour scheme
+      ansible.builtin.command: /tmp/papirus-folders/papirus-folders -C cat-mocha-lavender --theme Papirus-Dark
+
+    - name: Create gtk-4.0 folder
+      ansible.builtin.file:
+        path: /home/{{ lookup('env', 'SUDO_USER') }}/.config/gtk-4.0
+        state: directory
+        owner: "{{ lookup('env', 'SUDO_USER') }}"
+        group: "{{ lookup('env', 'SUDO_USER') }}"
+
+    - name: Symlink catppuccin theme assets to gtk4 folder
+      ansible.builtin.command: ln -sf "/home/{{ lookup('env', 'SUDO_USER') }}/.local/share/themes/Catppuccin-Mocha-Standard-Lavender-Dark/gtk-4.0/assets" "/home/{{ lookup('env', 'SUDO_USER') }}/.config/gtk-4.0/assets"
+
+    - name: Symlink catppuccin theme gtk.css to gtk4 folder
+      ansible.builtin.command: ln -sf "/home/{{ lookup('env', 'SUDO_USER') }}/.local/share/themes/Catppuccin-Mocha-Standard-Lavender-Dark/gtk-4.0/gtk.css" "/home/{{ lookup('env', 'SUDO_USER') }}/.config/gtk-4.0/gtk.css"
+      
+    - name: Symlink catppuccin theme gtk-dark.css to gtk4 folder
+      ansible.builtin.command: ln -sf "/home/{{ lookup('env', 'SUDO_USER') }}/.local/share/themes/Catppuccin-Mocha-Standard-Lavender-Dark/gtk-4.0/gtk-dark.css" "/home/{{ lookup('env', 'SUDO_USER') }}/.config/gtk-4.0/gtk-dark.css"
+
+    - name: Copy .local configs to my home directory
+      synchronize:
+        src: '{{ playbook_dir }}/local/'
+        dest: "/home/{{ lookup('env', 'SUDO_USER') }}/.local/"
+    
+    - name: Clone catppuccin-sddm
+      git:
+        repo: https://github.com/catppuccin/sddm.git
+        dest: /tmp/catppuccin-sddm
+        clone: yes
+        update: yes
+    
+    - name: Copy catppuccin sddm patch
+      synchronize:
+        src: /tmp/catppuccin-sddm/src/
+        dest: /usr/share/sddm/themes/   
+    
+    - name: Enable sddm theme
+      ansible.builtin.lineinfile:
+        path: /etc/sddm.conf
+        line: "[Theme]\nCurrent=catppuccin-mocha"
+        create: yes
+
+    - name: Change default shell to zsh
+      ansible.builtin.command: sudo chsh {{ lookup('env', 'SUDO_USER') }} -s /bin/zsh
+
+    - name: Download Material Icon theme
+      ansible.builtin.get_url:
+        url: https://github.com/google/material-design-icons/raw/master/font/MaterialIcons-Regular.ttf
+        dest: "/home/{{ lookup('env', 'SUDO_USER') }}/.local/share/fonts/"
+
+    - name: Download font awesome regular fonts
+      ansible.builtin.get_url:
+        url: https://github.com/FortAwesome/Font-Awesome/raw/6.x/otfs/Font%20Awesome%206%20Free-Regular-400.otf
+        dest: "/home/{{ lookup('env', 'SUDO_USER') }}/.local/share/fonts/"
+
+    - name: Download font awesome brand fonts
+      ansible.builtin.get_url:
+        url: https://github.com/FortAwesome/Font-Awesome/raw/6.x/otfs/Font%20Awesome%206%20Brands-Regular-400.otf
+        dest: "/home/{{ lookup('env', 'SUDO_USER') }}/.local/share/fonts/"
+    
+    - name: Download font awesome solid fonts
+      ansible.builtin.get_url:
+        url: https://github.com/FortAwesome/Font-Awesome/raw/6.x/otfs/Font%20Awesome%206%20Free-Solid-900.otf
+        dest: "/home/{{ lookup('env', 'SUDO_USER') }}/.local/share/fonts/"
+
+
+

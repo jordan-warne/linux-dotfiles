@@ -1,0 +1,42 @@
+- hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Install all of my packages through pacman
+      ansible.builtin.pacman:
+        name:
+          - vim
+          - curl
+          - wget
+          - feh
+          - firefox
+          - rsync
+          - git
+          - mako
+          - cmus
+          - ranger
+          - unzip
+          - network-manager-applet
+          - sddm
+          - gnome-keyring
+          - papirus-icon-theme
+          - nautilus
+          - hyprland
+          - foot
+          - rofi
+          - breeze
+          - swaybg
+          - swayidle
+          - swaylock
+          - zsh
+          - pavucontrol
+          - apparmor
+          - cifs-utils
+          - waybar
+        state: present
+
+    - name: Enable sddm on boot
+      ansible.builtin.command: systemctl enable sddm
+
+    - name: Enable apparmor on boot
+      ansible.builtin.command: systemctl enable apparmor
+
